@@ -1,0 +1,8 @@
+## Interface: 30300
+## Title: Zone Farclip Control
+## Notes: Allows per-zone view distance settings
+## Author: Fajaman
+## Version: 1.0
+## SavedVariables: ZoneFarclipDB
+
+ZoneFarclip.lua
