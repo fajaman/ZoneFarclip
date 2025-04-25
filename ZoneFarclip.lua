@@ -180,6 +180,11 @@ function ZFC:Init()
         local zone = selected.zone
         local value = slider:GetValue()
 
+        -- If value is unchanged return
+        if value == ZoneFarclipDB.settings[continent][zone] then
+            return
+        end
+
         -- Initialize the continent table if it doesn't exist
         ZoneFarclipDB.settings[continent] = ZoneFarclipDB.settings[continent] or {}
 
@@ -192,7 +197,7 @@ function ZFC:Init()
         end
 
         -- Print confirmation message
-        print(string.format("|cffffd700Farclip|r for |cff00ff00%s|r: |cff00ff00%s|r set to |cff00ff00%d|r", continent, zone, value))
+        print(string.format("|cffffd700Farclip|r for |cff00ff00%s|r set to |cff00ff00%d|r", zone, value))
     end)
 
     -- Slash command
@@ -203,7 +208,7 @@ function ZFC:Init()
         else
             frame:Show()
             -- Try to select current zone in dropdown when opening
-            if currentContinent and currentZone then
+            if currentContinent and continents[currentContinent] then
                 UIDropDownMenu_SetSelectedValue(zoneDropdown, { continent = currentContinent, zone = currentZone })
                 UIDropDownMenu_SetText(zoneDropdown, currentZone)
 
@@ -214,7 +219,7 @@ function ZFC:Init()
                 -- Fall back to Dalaran if current zone not found
                 local default = ZoneFarclipDB.defaultZone or defaults.defaultZone
                 UIDropDownMenu_SetSelectedValue(zoneDropdown, default)
-                UIDropDownMenu_SetText(zoneDropdown, default.continent .. ": " .. default.zone)
+                UIDropDownMenu_SetText(zoneDropdown, default.zone)
 
                 local savedValue = ZoneFarclipDB.settings[default.continent] and ZoneFarclipDB.settings[default.continent][default.zone]
                 slider:SetValue(savedValue or maxFarclip)
@@ -253,30 +258,27 @@ function ZFC.UpdateCurrentZone()
 
     -- Check if we have saved settings for this zone
     local savedValue = ZoneFarclipDB.settings[currentContinent][currentZone]
-
-    -- If current zone isn't found in our database, fall back to Dalaran
-    if not continents[currentContinent] or not tContains(continents[currentContinent], currentZone) then
-        currentContinent = ZoneFarclipDB.defaultZone.continent or defaults.defaultZone.continent
-        currentZone = ZoneFarclipDB.defaultZone.zone or defaults.defaultZone.zone
-        savedValue = ZoneFarclipDB.settings[currentContinent] and ZoneFarclipDB.settings[currentContinent][currentZone]
-    end
-
-    selectedZone = currentZone
+    local defaultZone = ZoneFarclipDB.defaultZone.zone or defaults.defaultZone.zone
 
     local farclipValue = savedValue or maxFarclip
-    local previousFarclipValue = math.floor(GetCVar("farclip"));
-
-    if (farclipValue ~= previousFarclipValue) then
+    if (farclipValue ~= math.floor(GetCVar("farclip"))) then
         -- Apply either the saved value or maximum if no saved value exists
         SetCVar("farclip", farclipValue)
 
-        -- Purge the graphics context if value has increased or the zone is Dalaran
-        if (farclipValue > previousFarclipValue or currentZone == "Dalaran") then
+        -- Purge the graphics context if value has increased or the zone is default
+        if (farclipValue > previousFarclipValue or currentZone == defaultZone) then
             RestartGx()
         end
 
         -- Print current zone info
         print(string.format("|cffffd700Farclip|r for |cff00ff00%s|r: |cff00ff00%s|r set to |cff00ff00%d|r", currentContinent, currentZone, farclipValue))
+    end
+
+    -- If current zone is found set as selected, otherwise fall back to default
+    if continents[currentContinent] and tContains(continents[currentContinent], currentZone) then
+        selectedZone = currentZone
+    else
+        selectedZone = defaultZone
     end
 end
 
