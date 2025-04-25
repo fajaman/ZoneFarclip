@@ -1,8 +1,10 @@
--- ZoneFarclip
-local addonName, ZFC = "ZoneFarclip", {}
+---@alias ContinentName string
 
----@alias ContinentName "Eastern Kingdoms" | "Kalimdor" | "Outland" | "Northrend"
----@alias ContinentID 1|2|3|4
+---@type string
+local addonName = "ZoneFarclip"
+
+---@type table
+local ZFC = {}
 
 ---@type number
 local maxFarclip = 1277;
@@ -44,6 +46,7 @@ local continents = {
 }
 
 -- Default settings structure
+---@type table
 local defaults = {
     settings = {},
     version = 1,
@@ -51,7 +54,9 @@ local defaults = {
 }
 
 -- Current zone tracking
-local currentContinent, currentZone
+---@type string
+local currentContinent
+local currentZone
 local selectedZone
 
 -- UI Elements
@@ -126,7 +131,7 @@ function ZFC:Init()
             end
         elseif level == 2 and menuList then
             -- Second level - Zones for the selected continent
-            local zones = continents[menuList]
+            local zones = continents[string.format(menuList)]
             for _, zone in ipairs(zones) do
                 info.text = zone
                 info.checked = selectedZone == zone
@@ -152,12 +157,12 @@ function ZFC:Init()
     slider = CreateFrame("Slider", "ZFCFarclipSlider", frame, "OptionsSliderTemplate")
     slider:SetPoint("TOPLEFT", 75, -100)
     slider:SetWidth(200)
-    slider:SetMinMaxValues(100, maxFarclip)
+    slider:SetMinMaxValues(177, maxFarclip)
     slider:SetValueStep(10)
     getglobal(slider:GetName() .. "Low"):SetText("Low")
     getglobal(slider:GetName() .. "High"):SetText("High")
     slider:SetScript("OnValueChanged", function(self, value)
-        getglobal(self:GetName() .. "Text"):SetText(math.floor((value / maxFarclip) * 100) .. "%")
+        getglobal(self:GetName() .. "Text"):SetText(math.floor(((value - 177) / (maxFarclip - 177)) * 100) .. "%")
     end)
 
     -- Apply button
@@ -233,11 +238,12 @@ end
 
 -- Update current zone information
 function ZFC.UpdateCurrentZone()
-    ---@type ContinentID
+    ---@type number
     local continent = GetCurrentMapContinent()
     local zone = GetRealZoneText()
 
     -- Convert continent index to name
+    ---@type ContinentName[]
     local continentNames = { "Kalimdor", "Eastern Kingdoms", "Outland", "Northrend" }
     currentContinent = continentNames[continent] or "Unknown"
     currentZone = zone
@@ -256,12 +262,22 @@ function ZFC.UpdateCurrentZone()
     end
 
     selectedZone = currentZone
-    -- Apply either the saved value or maximum if no saved value exists
-    local farclipValue = savedValue or maxFarclip
-    SetCVar("farclip", farclipValue)
 
-    -- Print current zone info
-    print(string.format("|cffffd700Farclip|r for |cff00ff00%s|r: |cff00ff00%s|r set to |cff00ff00%d|r", currentContinent, currentZone, farclipValue))
+    local farclipValue = savedValue or maxFarclip
+    local previousFarclipValue = math.floor(GetCVar("farclip"));
+
+    if (farclipValue ~= previousFarclipValue) then
+        -- Apply either the saved value or maximum if no saved value exists
+        SetCVar("farclip", farclipValue)
+
+        -- Purge the graphics context if value has increased or the zone is Dalaran
+        if (farclipValue > previousFarclipValue or currentZone == "Dalaran") then
+            RestartGx()
+        end
+
+        -- Print current zone info
+        print(string.format("|cffffd700Farclip|r for |cff00ff00%s|r: |cff00ff00%s|r set to |cff00ff00%d|r", currentContinent, currentZone, farclipValue))
+    end
 end
 
 -- Initialize on load
