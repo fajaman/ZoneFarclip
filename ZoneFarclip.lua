@@ -126,9 +126,10 @@ function ZFC:Init()
                 info.text = continent
                 info.hasArrow = true
                 info.menuList = continent
-                info.notCheckable = true
+                info.checked = tContains(continents[continent], selectedZone)
                 UIDropDownMenu_AddButton(info, level)
             end
+
         elseif level == 2 and menuList then
             -- Second level - Zones for the selected continent
             local zones = continents[string.format(menuList)]
@@ -259,9 +260,10 @@ function ZFC.UpdateCurrentZone()
     -- Check if we have saved settings for this zone
     local savedValue = ZoneFarclipDB.settings[currentContinent][currentZone]
     local defaultZone = ZoneFarclipDB.defaultZone.zone or defaults.defaultZone.zone
+    local previousFarclipValue = math.floor(GetCVar("farclip"));
 
     local farclipValue = savedValue or maxFarclip
-    if (farclipValue ~= math.floor(GetCVar("farclip"))) then
+    if (farclipValue ~= previousFarclipValue) then
         -- Apply either the saved value or maximum if no saved value exists
         SetCVar("farclip", farclipValue)
 
